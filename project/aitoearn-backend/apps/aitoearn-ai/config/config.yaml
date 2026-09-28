@@ -746,7 +746,7 @@ ai:
             duration: 8
   openai:
     apiKey: ""
-    baseUrl: https://aitoearn.ai/api/ai
+    baseUrl: https://aitoearn.cn/api/ai
     timeout: 300000
   volcengine:
     apiKey: ""
@@ -764,13 +764,13 @@ ai:
     baseUrl: https://dashscope.aliyuncs.com
   gemini:
     apiKey: ""
-    baseUrl: https://aitoearn.ai/api/ai
+    baseUrl: https://aitoearn.cn/api/ai
   relay:
-    url: https://aitoearn.ai/
+    url: https://aitoearn.cn/
     apiKey: ""
     timeout: 300000
   anthropic:
-    baseUrl: https://aitoearn.ai/api/ai
+    baseUrl: https://aitoearn.cn/api/ai
     apiKey: ""
   draftGeneration:
     planner:
