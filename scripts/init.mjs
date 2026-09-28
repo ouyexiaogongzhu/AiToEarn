@@ -9,13 +9,29 @@ import { writeFileSync, mkdirSync } from 'fs'
 import { dirname } from 'path'
 import crypto from 'crypto'
 
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://admin:password@mongodb:27017'
-const JWT_SECRET = process.env.JWT_SECRET || 'change-this-jwt-secret'
+const MONGO_URI = process.env.MONGO_URI
+const JWT_SECRET = process.env.JWT_SECRET
 const DB_NAME = process.env.DB_NAME || 'aitoearn'
 const TOKEN_PATH = process.env.AUTO_LOGIN_TOKEN_PATH || '/data/init/token.txt'
 const DEFAULT_EMAIL = 'admin@aitoearn.local'
 
+const INSECURE_JWT = new Set(['change-this-jwt-secret', 'replace-me', ''])
+const INSECURE_MONGO = /mongodb:\/\/(?:admin:password|[^/]*:password)@|mongodb:\/\/[^/]*:replace-me@/
+
+function assertSecureBootstrap() {
+  if (!MONGO_URI) {
+    throw new Error('MONGO_URI is required. Run: node scripts/bootstrap-secrets.mjs')
+  }
+  if (!JWT_SECRET || INSECURE_JWT.has(JWT_SECRET)) {
+    throw new Error('JWT_SECRET is missing or insecure. Run: node scripts/bootstrap-secrets.mjs')
+  }
+  if (INSECURE_MONGO.test(MONGO_URI)) {
+    throw new Error('MONGO_URI uses an insecure default password. Run: node scripts/bootstrap-secrets.mjs')
+  }
+}
+
 async function main() {
+  assertSecureBootstrap()
   const client = new MongoClient(MONGO_URI)
   await client.connect()
   console.log('Connected to MongoDB')
@@ -71,7 +87,7 @@ async function main() {
   const token = jwt.sign(
     { id: user._id.toString(), mail: user.mail, name: user.name },
     JWT_SECRET,
-    { expiresIn: '100y' },
+    { expiresIn: '7d' },
   )
 
   mkdirSync(dirname(TOKEN_PATH), { recursive: true })

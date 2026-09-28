@@ -13,6 +13,10 @@ dist-electron
 release
 *.local
 .vscode
+.env
+.env.*
+!.env.example
+**/config.runtime.yaml
 # Editor directories and files
 .vscode/.debug.env
 .idea

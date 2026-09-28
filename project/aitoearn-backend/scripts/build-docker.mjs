@@ -210,6 +210,16 @@ async function createDepsWorkspace(projects, graph, contextDir, verbose = false)
   return depsDir
 }
 
+async function hasDockerBuildx() {
+  try {
+    await $`docker buildx version`
+    return true
+  }
+  catch {
+    return false
+  }
+}
+
 async function buildImage(projectName, contextDir, options = {}) {
   const {
     verbose = false,
@@ -228,10 +238,16 @@ async function buildImage(projectName, contextDir, options = {}) {
   }
 
   const platformStr = platforms.join(',')
+  const useBuildx = await hasDockerBuildx()
+
+  if (!useBuildx && (push || platforms.length > 1)) {
+    throw new Error('当前环境缺少 docker buildx，无法执行多平台构建或推送。请安装 buildx 插件。')
+  }
 
   if (verbose) {
     console.info(chalk.yellow(`构建 Docker 镜像: ${projectName}`))
     console.info(chalk.gray(`  目标平台: ${platformStr}`))
+    console.info(chalk.gray(`  构建器: ${useBuildx ? 'buildx' : 'docker build'}`))
   }
 
   // 获取当前日期 (YYYYMMDD 格式)
@@ -249,11 +265,16 @@ async function buildImage(projectName, contextDir, options = {}) {
   const remoteImageNames = registries.map(registry => `${registry}/${projectName}:${tag}`)
   const imageNames = push ? remoteImageNames : [localImageName, ...remoteImageNames]
   const tagArgs = imageNames.flatMap(imageName => ['-t', imageName])
-  const pushArgs = push ? ['--push'] : ['--load']
 
   try {
-    // 构建镜像并打所有 tag
-    await $({ cwd: contextDir })`docker buildx build --build-arg APP_NAME=${projectName} --platform ${platformStr} -t ${localImageName} ${tagArgs} ${pushArgs} .`
+    if (useBuildx) {
+      const pushArgs = push ? ['--push'] : ['--load']
+      await $({ cwd: contextDir })`docker buildx build --build-arg APP_NAME=${projectName} --platform ${platformStr} -t ${localImageName} ${tagArgs} ${pushArgs} .`
+    }
+    else {
+      // Legacy docker build (no buildx plugin): single-platform local load only.
+      await $({ cwd: contextDir })`docker build --build-arg APP_NAME=${projectName} ${tagArgs} .`
+    }
     console.info(chalk.green(`Docker 镜像构建完成:`))
     if (!push) {
       console.info(chalk.gray(`  本地: ${localImageName}`))

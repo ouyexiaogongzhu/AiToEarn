@@ -273,10 +273,11 @@ For teams wanting to run AiToEarn on their own server. 3 commands, no manual dat
 ```bash
 git clone https://github.com/yikart/AiToEarn.git
 cd AiToEarn
+node scripts/bootstrap-secrets.mjs
 docker compose up -d
 ```
 
-Open **[http://localhost:8080](http://localhost:8080)** and you're ready to go.
+Open **[http://localhost:8080](http://localhost:8080)** and you're ready to go. Generate `.env` secrets before any public exposure; for local images with this repo's security fixes, run `./scripts/build.sh` first.
 
 #### Configure Relay (Strongly Recommended)
 

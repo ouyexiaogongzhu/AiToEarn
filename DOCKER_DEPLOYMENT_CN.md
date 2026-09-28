@@ -55,15 +55,19 @@ docker compose version
 
 只需 3 步，即可在本地跑起完整的 AiToEarn。
 
-### 第 1 步：克隆并启动
+### 第 1 步：克隆、生成密钥并启动
 
 ```bash
 git clone https://github.com/yikart/AiToEarn.git
 cd AiToEarn
+node scripts/bootstrap-secrets.mjs   # 生成 .env 与 config.runtime.yaml（强随机密钥，勿提交）
 docker compose up -d
 ```
 
-首次启动会拉取镜像，可能需要几分钟。运行 `docker compose ps` 确认所有服务为 `healthy` 或 `running`。
+> 公网部署前请确认已运行 `bootstrap-secrets.mjs`，不要使用仓库里的默认口令。
+> 若需要包含本仓库最新安全修复的后端镜像，先执行 `./scripts/build.sh`，再 `docker compose up -d`（`pull_policy: missing` 会优先使用本地镜像）。
+
+首次启动会拉取/构建镜像，可能需要几分钟。运行 `docker compose ps` 确认所有服务为 `healthy` 或 `running`。
 
 ### 第 2 步：打开界面
 
@@ -101,7 +105,7 @@ docker compose up -d
 
 ### 镜像拉取策略
 
-所有应用服务镜像使用 `pull_policy: always`，确保每次 `docker compose up` 都拉取最新镜像。
+应用服务（`aitoearn-server` / `aitoearn-ai` / `aitoearn-web`）使用 `pull_policy: missing`：本地已有镜像（例如 `./scripts/build.sh` 构建的安全修复版）则直接使用，不存在时才从 Docker Hub 拉取。
 
 ### 内部服务通信
 
@@ -129,9 +133,10 @@ docker compose up -d
 
 ### Compose 中仍保留的环境变量
 
-| 变量 | 所属服务 | 说明 | 默认值 |
-|------|----------|------|--------|
-| `MONGO_INITDB_ROOT_PASSWORD` | mongodb | MongoDB root 密码 | `password` |
-| `RUSTFS_ACCESS_KEY` / `RUSTFS_SECRET_KEY` | rustfs | RustFS 访问凭证 | `rustfsadmin` |
-| `MONGO_URI` / `JWT_SECRET` / `DB_NAME` / `AUTO_LOGIN_TOKEN_PATH` | aitoearn-init | 首次启动初始化管理员与自动登录 token | 内置默认值 |
-| `NODE_ENV` / `NEXT_TELEMETRY_DISABLED` | aitoearn-web | Web 运行环境与 Next.js telemetry 设置 | `production` / `1` |
+| 变量 | 所属服务 | 说明 | 来源 |
+|------|----------|------|------|
+| `MONGO_USERNAME` / `MONGO_PASSWORD` | mongodb | MongoDB root 凭据 | `.env`（`bootstrap-secrets.mjs`） |
+| `REDIS_PASSWORD` | redis | Redis 密码 | `.env` |
+| `RUSTFS_ACCESS_KEY` / `RUSTFS_SECRET_KEY` | rustfs | RustFS 访问凭证 | `.env` |
+| `MONGO_URI` / `JWT_SECRET` / `DB_NAME` / `AUTO_LOGIN_TOKEN_PATH` | aitoearn-init | 首次启动初始化管理员与自动登录 token | `.env` + compose |
+| `NODE_ENV` / `NEXT_TELEMETRY_DISABLED` | aitoearn-web | Web 运行环境与 Next.js telemetry 设置 | compose 固定为 `production` / `1` |

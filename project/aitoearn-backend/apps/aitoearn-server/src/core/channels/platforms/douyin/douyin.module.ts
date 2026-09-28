@@ -13,7 +13,6 @@ import { DouyinWorkProvider } from './douyin-work.provider'
 import { DouyinConfig } from './douyin.config'
 import { DOUYIN_METADATA } from './douyin.constants'
 import { DouyinService } from './douyin.service'
-import { DouyinOfflineQrController } from './offline-qr/douyin-offline-qr.controller'
 import { DouyinOfflineQrService } from './offline-qr/douyin-offline-qr.service'
 
 @Module({})
@@ -52,7 +51,9 @@ export class DouyinModule {
     return {
       module: DouyinModule,
       imports: [PlatformRegistryModule, ShortLinkModule],
-      controllers: [DouyinOfflineQrController],
+      // Offline QR publish is intentionally not HTTP-exposed: the previous
+      // anonymous endpoint accepted attacker-controlled media URLs and fetched
+      // them server-side (SSRF) once Douyin was marked available.
       providers: [
         { provide: DouyinConfig, useValue: availableConfig },
         DouyinOfflineQrService,

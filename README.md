@@ -279,10 +279,11 @@ MCP 地址：https://aitoearn.ai/api/unified/mcp
 ```bash
 git clone https://github.com/yikart/AiToEarn.git
 cd AiToEarn
+node scripts/bootstrap-secrets.mjs
 docker compose up -d
 ```
 
-启动后打开 **[http://localhost:8080](http://localhost:8080)** 即可使用。
+启动后打开 **[http://localhost:8080](http://localhost:8080)** 即可使用。公网部署前请先生成 `.env` 密钥；如需本仓库安全修复镜像，先执行 `./scripts/build.sh`。
 
 #### 配置 Relay（强烈推荐）
 

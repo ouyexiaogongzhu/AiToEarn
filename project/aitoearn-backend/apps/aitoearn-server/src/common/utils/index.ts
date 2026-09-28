@@ -8,6 +8,7 @@
 
 export * from './file.util'
 export * from './ip.util'
+export * from './safe-outbound-url.util'
 export * from './time.util'
 
 /**

@@ -24,8 +24,8 @@ vi.mock('@yikart/mongodb', () => ({
   },
 }))
 
-function createService(assetsService = { uploadFromBuffer: vi.fn() }) {
-  return new MediaService({} as never, assetsService as never)
+function createService(assetsService = { uploadFromBuffer: vi.fn() }, allowedHosts: string[] = []) {
+  return new MediaService({} as never, assetsService as never, allowedHosts)
 }
 
 function setHttpAdapter(service: MediaService, adapter: (config: InternalAxiosRequestConfig) => unknown) {
@@ -64,6 +64,19 @@ describe('media service http downloads', () => {
 
     expect(Buffer.isBuffer(buffer)).toBe(true)
     expect(buffer.toString()).toBe('media-bytes')
+  })
+
+  it('blocks private outbound media URLs before downloading', async () => {
+    const service = createService()
+    setHttpAdapter(service, async () => {
+      throw new Error('should not fetch')
+    })
+
+    await expect(service.getBuffer({
+      platform: AccountType.TikTok,
+      endpoint: 'downloadVideo',
+      url: 'http://127.0.0.1:9000/secret',
+    })).rejects.toMatchObject({ code: 15096 })
   })
 
   it('creates upload sources with range streams and blobs without retaining temp files', async () => {

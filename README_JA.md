@@ -278,10 +278,11 @@ SSE接続もサポート：`https://aitoearn.ai/api/unified/sse`
 ```bash
 git clone https://github.com/yikart/AiToEarn.git
 cd AiToEarn
+node scripts/bootstrap-secrets.mjs
 docker compose up -d
 ```
 
-起動後、**[http://localhost:8080](http://localhost:8080)** を開けば使用可能。
+起動後、**[http://localhost:8080](http://localhost:8080)** を開けば使用可能。公開前に `.env` の秘密鍵を生成してください。本リポジトリのセキュリティ修正入りローカルイメージが必要な場合は、先に `./scripts/build.sh` を実行します。
 
 #### Relayの設定（強く推奨）
 

@@ -55,15 +55,19 @@ docker compose version
 
 Just 3 steps to run the complete AiToEarn on your machine.
 
-### Step 1: Clone and Start
+### Step 1: Clone, generate secrets, and start
 
 ```bash
 git clone https://github.com/yikart/AiToEarn.git
 cd AiToEarn
+node scripts/bootstrap-secrets.mjs   # creates .env + config.runtime.yaml with strong random secrets — do not commit
 docker compose up -d
 ```
 
-First startup pulls images — may take a few minutes. Run `docker compose ps` to confirm all services are `healthy` or `running`.
+> Before public exposure, always run `bootstrap-secrets.mjs` — never ship with repository default passwords.
+> To run backend images that include the latest security fixes from this repo, run `./scripts/build.sh` first, then `docker compose up -d` (`pull_policy: missing` prefers local images).
+
+First startup pulls/builds images — may take a few minutes. Run `docker compose ps` to confirm all services are `healthy` or `running`.
 
 ### Step 2: Open the UI
 
@@ -101,7 +105,7 @@ Enabled by default. On first startup, `aitoearn-init` generates an admin token s
 
 ### Image Pull Policy
 
-All app images use `pull_policy: always` to pull the latest on every `docker compose up`.
+App services (`aitoearn-server` / `aitoearn-ai` / `aitoearn-web`) use `pull_policy: missing`: prefer a local image (for example one built by `./scripts/build.sh` with security fixes) and only pull from Docker Hub when the tag is absent.
 
 ### Internal Service Communication
 
@@ -129,9 +133,10 @@ Mounted as writable volumes and editable from the Configuration UI. Restart the 
 
 ### Environment Variables Still Kept in Compose
 
-| Variable | Service(s) | Description | Default |
-|----------|------------|-------------|---------|
-| `MONGO_INITDB_ROOT_PASSWORD` | mongodb | MongoDB root password | `password` |
-| `RUSTFS_ACCESS_KEY` / `RUSTFS_SECRET_KEY` | rustfs | RustFS credentials | `rustfsadmin` |
-| `MONGO_URI` / `JWT_SECRET` / `DB_NAME` / `AUTO_LOGIN_TOKEN_PATH` | aitoearn-init | First-start admin initialization and auto-login token | Built-in defaults |
-| `NODE_ENV` / `NEXT_TELEMETRY_DISABLED` | aitoearn-web | Web runtime mode and Next.js telemetry setting | `production` / `1` |
+| Variable | Service(s) | Description | Source |
+|----------|------------|-------------|--------|
+| `MONGO_USERNAME` / `MONGO_PASSWORD` | mongodb | MongoDB root credentials | `.env` (`bootstrap-secrets.mjs`) |
+| `REDIS_PASSWORD` | redis | Redis password | `.env` |
+| `RUSTFS_ACCESS_KEY` / `RUSTFS_SECRET_KEY` | rustfs | RustFS credentials | `.env` |
+| `MONGO_URI` / `JWT_SECRET` / `DB_NAME` / `AUTO_LOGIN_TOKEN_PATH` | aitoearn-init | First-start admin initialization and auto-login token | `.env` + compose |
+| `NODE_ENV` / `NEXT_TELEMETRY_DISABLED` | aitoearn-web | Web runtime mode and Next.js telemetry setting | compose fixed to `production` / `1` |

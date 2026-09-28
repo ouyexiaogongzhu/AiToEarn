@@ -16,6 +16,7 @@ import axios from 'axios'
 import sizeOf from 'image-size'
 import { lookup, extension as mimeExtension } from 'mime-types'
 import sharp from 'sharp'
+import { assertSafeOutboundUrl } from '../../../common/utils/safe-outbound-url.util'
 import { ChannelPlatformException, PlatformErrorCategory, PlatformErrorCauseType } from '../platforms/platforms.exception'
 import { PublishMediaType } from '../platforms/platforms.interface'
 import { isImageFormatAllowedByMediaRules, listAllowedAdaptationImageFormats, normalizeAdaptationImageFormat, PublishMediaAdaptationImageFormat } from '../platforms/publish-media-adaptation.schema'
@@ -128,15 +129,31 @@ export class MediaService {
   private readonly logger = new Logger(MediaService.name)
   private readonly imageConversionSourceMaxBytes = 25 * 1024 * 1024
   private readonly http: AxiosInstance
+  private readonly allowedOutboundHosts: Set<string>
 
   constructor(
     private readonly videoMetadataService: VideoMetadataService,
     private readonly assetsService: AssetsService,
+    allowedOutboundHosts: Iterable<string> = [],
   ) {
+    this.allowedOutboundHosts = new Set(
+      [...allowedOutboundHosts]
+        .map(host => host.trim().toLowerCase())
+        .filter(Boolean),
+    )
     this.http = axios.create({
       timeout: 30000,
       maxContentLength: Infinity,
       maxBodyLength: Infinity,
+      // Disallow redirects to prevent DNS-rebinding / open-redirect SSRF bypasses.
+      maxRedirects: 0,
+    })
+    this.http.interceptors.request.use(async (requestConfig) => {
+      const url = requestConfig.url
+      if (url) {
+        await this.assertSafeMediaUrl(url)
+      }
+      return requestConfig
     })
     this.http.interceptors.response.use(
       response => response,
@@ -148,6 +165,10 @@ export class MediaService {
         throw this.fromAxiosError(error, input)
       },
     )
+  }
+
+  private async assertSafeMediaUrl(url: string): Promise<void> {
+    await assertSafeOutboundUrl(url, { allowedHosts: this.allowedOutboundHosts })
   }
 
   async getBuffer(input: MediaHttpInput): Promise<Buffer> {
@@ -217,6 +238,7 @@ export class MediaService {
   }
 
   async probeVideo(url: string): Promise<VideoProbe> {
+    await this.assertSafeMediaUrl(url)
     const head = await this.http.head(url, { timeout: 15000 })
     const { 'content-length': contentLength } = head.headers
     const sizeBytes = Number(contentLength || 0)

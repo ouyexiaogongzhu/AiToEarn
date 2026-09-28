@@ -4,12 +4,11 @@ import { Module } from '@nestjs/common'
 import { isAvailablePlatformConfig, isVisiblePlatformConfig } from '../platforms.config'
 import { PlatformIntegrationRegistry } from '../platforms.registry'
 import { PlatformRegistryModule } from '../platforms.registry.module'
-import { RedNoteOfflineQrController } from './offline-qr/rednote-offline-qr.controller'
-import { RedNoteOfflineQrService } from './offline-qr/rednote-offline-qr.service'
 import { RedNotePublishProvider } from './rednote-publish.provider'
 import { RedNoteWorkProvider } from './rednote-work.provider'
 import { RednoteConfig } from './rednote.config'
 import { REDNOTE_METADATA } from './rednote.constants'
+import { RedNoteOfflineQrService } from './offline-qr/rednote-offline-qr.service'
 
 @Module({})
 export class RedNoteModule {
@@ -46,7 +45,8 @@ export class RedNoteModule {
     return {
       module: RedNoteModule,
       imports: [PlatformRegistryModule],
-      controllers: [RedNoteOfflineQrController],
+      // Offline QR share-config is intentionally not HTTP-exposed: the previous
+      // anonymous endpoint could be scraped to burn platform signing quota.
       providers: [
         { provide: RednoteConfig, useValue: availableConfig },
         RedNoteOfflineQrService,

@@ -1,19 +1,21 @@
-FROM node:24-alpine AS deps
+FROM node:24-bookworm-slim AS deps
 
-RUN npm install -g pnpm
+RUN npm install -g pnpm@10.33.0
 
 WORKDIR /app
 
 COPY deps/ ./
 
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --prod
+RUN pnpm install --prod
 
-FROM node:24-alpine AS production
+FROM node:24-bookworm-slim AS production
 
 ARG APP_NAME
 
-RUN apk add --no-cache curl
-RUN npm install -g pm2 ffmpeg
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends curl ffmpeg \
+  && rm -rf /var/lib/apt/lists/*
+RUN npm install -g pm2
 
 WORKDIR /app
 
